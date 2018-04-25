@@ -1,12 +1,3 @@
----
-title: "xgboost"
-author: "Brian Lin"
-date: "June 1, 2017"
-output: html_document
----
-
-
-```{r}
 
 #Required packages
 
@@ -22,22 +13,20 @@ library(car)
 library(caret)
 library(Tree)
 library(forcats)
-```
 
-```{r}
+
 options(scipen=999)
-```
+
 
 #Run all would skipped all the code that is not used in final model.
 #Use Run all to generate prediction.
 
-This code included many configeration I have done. 
-Most configeration didn't even provide a good testing MSE, so was not even submitted on Kaggle.
-However, that's likely my biggest mistake. 
-Without remove the outliers, the testing MSE are not a good indicatio for improvement. 
+#This code included many configeration I have done. 
+#Most configeration didn't even provide a good testing MSE, so was not even submitted on Kaggle.
+#However, that's likely my biggest mistake. 
+#Without remove the outliers, the testing MSE are not a good indicatio for improvement. 
 
 
-```{r}
 #load file from directory 
 
 setwd("A:/Spring 2017/Stats 101C/FInal Project")
@@ -72,11 +61,10 @@ lafd <- data.frame(lafd,elapsed_time)
 
 
 
-```
+
 
 
 #Merge level was not really helping either
-```{r eval= FALSE}
 #Merge levels 
 #This line of code is writting by Maria modify by me.
 #The code originally merge all less popular levels into one new level called "other""
@@ -86,28 +74,27 @@ lafd <- data.frame(lafd,elapsed_time)
 
 Unit.Type <- lafd$Unit.Type %>% 
   fct_collapse(`RA8xx - BLS Rescue Ambulance` = c("SC - Swift Water Coordinator",
-                                                       "SW - Swift Water Rescue",
-                                                       "HC - Hose Carrier",
-                                                       "PT - Planning Trailer",
-                                                       "HM - Hazmat Tender",
-                                                       "FT - Foam Tender","FC - Fire Chief",
-                                                       "EL - Emergency Lighting",
-                                                       "AU - Assessment Unit",
-                                                       "RT - Rehab Tender (Food Service)",
-                                                       "GT - Gator Truck",
-                                                       "DZ - Dozer (Tractor)",
-                                                       "DP - Dump Truck",
-                                                       "CV - Communications Van",
-                                                       "CP - Command Post Unit"))
+                                                  "SW - Swift Water Rescue",
+                                                  "HC - Hose Carrier",
+                                                  "PT - Planning Trailer",
+                                                  "HM - Hazmat Tender",
+                                                  "FT - Foam Tender","FC - Fire Chief",
+                                                  "EL - Emergency Lighting",
+                                                  "AU - Assessment Unit",
+                                                  "RT - Rehab Tender (Food Service)",
+                                                  "GT - Gator Truck",
+                                                  "DZ - Dozer (Tractor)",
+                                                  "DP - Dump Truck",
+                                                  "CV - Communications Van",
+                                                  "CP - Command Post Unit"))
 lafd <- cbind.data.frame(lafd[,-c(8)],Unit.Type)
 
 #make elapsed time the last one
 lafd <- select(lafd,-elapsed_time)
 lafd <- data.frame(lafd,elapsed_time)
-```
 
 
-```{r eval= FALSE}
+
 
 #Testing how relyable is replacing all NAs Dispatched.Sequence with 1?
 
@@ -130,10 +117,9 @@ length(check1$`Dispatch Sequence`[check1$`Dispatch Sequence` != 1] )
 
 #misclasify rate in the first 10000 observation
 3/100000
-```
 
 
-```{r}
+
 #data cleaning
 
 
@@ -168,14 +154,13 @@ lafd.clean$Incident.Creation.Time..GMT. <- as.factor(lafd.clean$Incident.Creatio
 lafd.clean$year <- as.factor(lafd$year)
 
 
-```
+
 
 
 
 #another attempt to create new variable
-```{r eval=FALSE}
 lafd.clean <- mutate(lafd.clean, Dispatch.Size = ifelse(Dispatch.Sequence %in% 1:199, "Not Outlier",
-                       ifelse(Dispatch.Sequence %in% 300:1000, "Outlier",NA)))
+                                                        ifelse(Dispatch.Sequence %in% 300:1000, "Outlier",NA)))
 
 lafd.clean$Dispatch.Size <- factor(lafd.clean$Dispatch.Size)
 
@@ -193,11 +178,10 @@ lafd.clean <- merge(lafd.clean, lafd.first, by = "First.in.District")
 elapsed_time <- lafd.clean$elapsed_time
 lafd.clean <- select(lafd.clean,-elapsed_time)
 lafd.clean <- data.frame(lafd.clean,elapsed_time)
-```
 
 
 
-```{r}
+
 #data manage
 
 df1 <- dplyr::select(lafd.clean, -Emergency.Dispatch.Code)
@@ -242,21 +226,16 @@ df2$First.in.District <- as.numeric(df2$First.in.District)
 df2$Dispatch.Sequence <- as.numeric(df2$Dispatch.Sequence)
 df2$elapsed_time <- as.numeric(df2$elapsed_time)
 
-```
 
 
 
-```{r eval=FALSE}
+
 lm.m1 <- lm(elapsed_time~.,data=df2)
 inverseResponsePlot(lm.m1)
 
 powerTransform(lm.m1)
 
 
-```
-
-
-```{r}
 #set CV
 set.seed(9999)
 i=1:dim(df2)[1]
@@ -304,10 +283,9 @@ dtrain <- xgb.DMatrix(data = feature, label = log(y))
 dtest <- xgb.DMatrix(data = feature.test)
 
 
-```
 
 
-```{r eval=FALSE}
+
 
 xgb.m1 <- xgboost(data = dtrain,
                   objective = "reg:linear",
@@ -328,7 +306,7 @@ xgb.m1 <- xgboost(data = dtrain,
 #Testing 
 
 y_hat <- predict(xgb.m1,dtest)
-  
+
 
 MSE1 <- mean((df2.test$elapsed_time - exp(y_hat))^2) 
 MSE1
@@ -342,11 +320,10 @@ xgb.plot.importance (importance_matrix = mat[1:length(df2.train)-1])
 
 
 mat
-```
 
 
 
-```{r eval=FALSE}
+
 params <- list("objective" = "reg:linear",
                "booster" = "gbtree",
                max_depth = 12,
@@ -369,12 +346,12 @@ xgbcv <- xgb.cv( params = params,
                  print_every_n = 1,
                  early.stop.round = 10,
                  maximize = F)
-```
 
 
 
 
-```{r eval=FALSE}
+
+
 #K fold K = 10
 
 cv.error <- function(data){
@@ -404,19 +381,19 @@ cv.error <- function(data){
     dtest <- xgb.DMatrix(data = feature.test)
     
     
-
+    
     
     xgb.fit <- xgboost(data = dtrain,
-                objective = "reg:linear",
-                eta = 0.2, #strinkage rate lambda
-                max_depth = 12, #limits the depth of each tree
-                min_child_weigt = 5,
-                gamma = 0.4,
-                colsample_bytree = 0.9,
-                subsample = 0.9,
-                nround = 70, #number of trees 
-                booster = "gbtree",
-                choice = "approx")
+                       objective = "reg:linear",
+                       eta = 0.2, #strinkage rate lambda
+                       max_depth = 12, #limits the depth of each tree
+                       min_child_weigt = 5,
+                       gamma = 0.4,
+                       colsample_bytree = 0.9,
+                       subsample = 0.9,
+                       nround = 70, #number of trees 
+                       booster = "gbtree",
+                       choice = "approx")
     y_hat <- predict(xgb.fit,dtest)
     mse <- mean((test$elapsed_time - exp(y_hat))^2) 
     MSE[i] <- mean(mse)
@@ -430,15 +407,14 @@ MSE.k <- cv.error(df2)
 MSE.k
 
 sd(MSE.k[[1]])
-```
 
-```{r eval=FALSE}
-MSE.rep <- rep(NA,5)
 
-for(i in 1:5){
-  temp <- cv.error(df2)
-  MSE.rep[i] <- temp[[2]]
-}
+  MSE.rep <- rep(NA,5)
+  
+  for(i in 1:5){
+    temp <- cv.error(df2)
+    MSE.rep[i] <- temp[[2]]
+  }
 
 
 mean(MSE.rep)
@@ -447,10 +423,9 @@ sd(MSE.rep)
 
 
 
-```
 
 
-```{r eval=FALSE}
+
 #Hyper tuning
 
 cv.ctrl <- trainControl(method = "repeatedcv", 
@@ -474,10 +449,9 @@ xgb_tune <- train(x = feature,
                   objective = "reg:linear")
 
 
-```
 
 
-```{r}
+
 #Final model training 
 
 
@@ -499,26 +473,25 @@ dtrain <- xgb.DMatrix(data = feature, label = log(y))
 
 
 xgb.final <- xgboost(data = dtrain,
-                  objective = "reg:linear",
-                  gamma = 0.4,
-                  eta = 0.2, #strinkage rate lambda
-                  max_depth = 12, #limits the depth of each tree
-                  min_child_weigt = 5,
-                  colsample_bytree = 1,
-                  subsample = 1,
-                  nround = 70, #number of trees 
-                  booster = "gbtree",
-                  choice = "approx")
+                     objective = "reg:linear",
+                     gamma = 0.4,
+                     eta = 0.2, #strinkage rate lambda
+                     max_depth = 12, #limits the depth of each tree
+                     min_child_weigt = 5,
+                     colsample_bytree = 1,
+                     subsample = 1,
+                     nround = 70, #number of trees 
+                     booster = "gbtree",
+                     choice = "approx")
 
 
 
 
-```
+
 
 
 
 #Create output
-```{r}
 
 #Change the directory 
 setwd("A:/Spring 2017/Stats 101C/Final Project/")
@@ -571,7 +544,7 @@ df3 <- dplyr::select(lafd1.clean, -Emergency.Dispatch.Code)
 for(i in 1:length(check1$row.id)){
   df3$Dispatch.Sequence[df3$row.id == check1$row.id[i]] <- 1
 }
-  
+
 length(df3$Dispatch.Sequence[is.na(df3$Dispatch.Sequence)])
 
 df3 <- dplyr::select(df3,-row.id)
@@ -598,7 +571,7 @@ write.csv(result,"result.csv", row.names = F)
 #It is always important to check the prediction mean and standard deviation
 mean(exp(elapsed_time))
 sd(exp(elapsed_time))
-```
+
 
 
 
